@@ -1,6 +1,8 @@
+<!DOCTYPE html>
+<html>
 {% load static %}
 <head>
-    <link rel="stylesheet" href="{% static 'css/jquery-ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/jquery-ui.min.css' %}">
     <script src="{% static 'js/jquery-3.3.1.min.js' %}"></script>
     <link rel="stylesheet" href="{% static 'css/game.css' %}"> 
     <script src="{% static 'js/dist/game.js' %}"></script>
@@ -10,7 +12,8 @@
     <div id="my_game_12345678"> </div>
     <script>
         $(document).ready(function(){
-            let my_game = MyGame("my_game_12345678");
+            let my_game = new MyGame("my_game_12345678");
         });
     </script>
 </body>
+</html>
