@@ -145,8 +145,13 @@ class Player extends MyGameObject{
         this.ctx.fillStyle = this.color;
         this.ctx.fill();
     }
-
+    
     on_destroy(){
+        if(this.is_me){
+            this.play.game_map.$canvas.off("contextmenu");
+            this.play.game_map.$canvas.off("mousedown");
+            $(window).off("keydown");
+        }
         for(let i = 0; i < this.play.players.length; i++){
             if(this.play.players[i] === this){
                 this.play.players.splice(i, 1);
