@@ -156,12 +156,10 @@ class Player extends MyGameObject{
             this.ctx.save();
             this.ctx.beginPath();
             this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-            this.ctx.clip();                                                        // 先裁剪
-            this.ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);  // 再画图
-            this.ctx.restore();                                                     // 恢复状态（取消裁剪）
-            this.ctx.beginPath();
-            this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-            this.ctx.stroke();   
+            this.ctx.stroke();
+            this.ctx.clip();
+            this.ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+            this.ctx.restore();
         }
         else{   
             this.ctx.beginPath();
@@ -170,7 +168,7 @@ class Player extends MyGameObject{
             this.ctx.fill();
         }
     }
-
+    
     on_destroy(){
         if(this.is_me){
             this.play.game_map.$canvas.off("contextmenu");

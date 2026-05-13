@@ -290,12 +290,10 @@ class Player extends MyGameObject{
             this.ctx.save();
             this.ctx.beginPath();
             this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-            this.ctx.clip();                                                        // 先裁剪
-            this.ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);  // 再画图
-            this.ctx.restore();                                                     // 恢复状态（取消裁剪）
-            this.ctx.beginPath();
-            this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-            this.ctx.stroke();   
+            this.ctx.stroke();
+            this.ctx.clip();
+            this.ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+            this.ctx.restore();
         }
         else{   
             this.ctx.beginPath();
@@ -304,7 +302,7 @@ class Player extends MyGameObject{
             this.ctx.fill();
         }
     }
-
+    
     on_destroy(){
         if(this.is_me){
             this.play.game_map.$canvas.off("contextmenu");
@@ -484,7 +482,87 @@ class Settings{
         if(this.root.os) this.platform = "ACAPP";
         this.username = "";
         this.photo = "";
+        this.$settings = $(`
+            <div class="my-game-settings">
+                <div class="my-game-settings-login">
+                    <div class="my-game-settings-title">
+                        登录
+                    </div>
+                    <div class="my-game-settings-username">
+                        <div class="my-game-settings-item">
+                            <input type="text" placeholder="用户名">
+                        </div>
+                    </div>
+                    <div class="my-game-settings-password">
+                        <div class="my-game-settings-item">
+                            <input type="password" placeholder="密码">
+                        </div>
+                    </div>
+                    <div class="my-game-settings-submit">
+                        <div class="my-game-settings-item">
+                            <button>登录</button>
+                        </div>
+                    </div>
+                    <div class="my-game-settings-error-messages">
+                    </div>
+                    <div class="my-game-settings-option">
+                        注册
+                    </div>
+					<br>					
+					<div class="my-game-settings-acwing">
+            			<img width="30" src="https://app165.acapp.acwing.com.cn/static/image/settings/acwing_logo.png">
+            			<br>
+            			<div>
+                			AcWing一键登录
+            			</div>
+              		</div>
 
+                </div>
+                <div class="my-game-settings-register">
+					<div class="my-game-settings-title">
+                        注册
+                    </div>
+                    <div class="my-game-settings-username">
+                        <div class="my-game-settings-item">
+                            <input type="text" placeholder="用户名">
+                        </div>
+                    </div>
+                    <div class="my-game-settings-password">
+                        <div class="my-game-settings-item">
+                            <input type="password" placeholder="密码">
+                        </div>
+                    </div>
+				    <div class="my-game-settings-password">
+                        <div class="my-game-settings-item">
+                            <input type="password" placeholder="确认密码">
+                        </div>
+                    </div>
+                    <div class="my-game-settings-submit">
+                        <div class="my-game-settings-item">
+                            <button>登录</button>
+                        </div>
+                    </div>
+                    <div class="my-game-settings-error-messages">
+                    </div>
+                    <div class="my-game-settings-option">
+                        登录
+                    </div>
+					<br>					
+					<div class="my-game-settings-acwing">
+            			<img width="30" src="https://app165.acapp.acwing.com.cn/static/image/settings/acwing_logo.png">
+            			<br>
+            			<div>
+                			AcWing一键登录
+            			</div>
+              		</div>
+                </div>
+            </div>
+        `);
+        this.$login = this.$settings.find(".my-game-settings-login");
+        this.$login.hide();
+        this.$register = this.$settings.find(".my-game-settings-register");
+        this.$register.hide();
+        this.root.$my_game.append(this.$settings);
         this.start();
     }
 
@@ -493,9 +571,13 @@ class Settings{
     }
 
     register(){
+        this.$login.hide();
+        this.$register.show();
     }
 
     login(){
+        this.$register.hide();
+        this.$login.show();
     }
 
     getinfo(){
@@ -514,16 +596,18 @@ class Settings{
                     outer.root.menu.show();
                 }
                 else{
-                    outer.login();
+                    outer.register();
                 }
             }
         });
     }
 
     hide(){
+        this.$settings.hide();
     }
        
     show(){
+        this.$settings.show();
     }
 }
 export class MyGame{
