@@ -17,6 +17,7 @@ class MyGameMenu{
     </div>
 </div>
 `);
+        this.$menu.hide();
         this.root.$my_game.append(this.$menu);
         this.$single_mode = this.$menu.find('.my-game-menu-field-item-single-mode');
         this.$multi_mode = this.$menu.find('.my-game-menu-field-item-multi-mode');
