@@ -1,5 +1,8 @@
 from django.contrib import admin
-from game.models.players.player import Player
-# Register your models here.
+from game.models.player.player import Player
+from game.models.myspace.follow import Follow
+from game.models.myspace.post import Post
 
 admin.site.register(Player)
+admin.site.register(Follow)
+admin.site.register(Post)
