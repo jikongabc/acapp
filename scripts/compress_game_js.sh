@@ -1,9 +1,9 @@
-#! /bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-JS_PATH=/home/jikong/acapp/game/static/js/
-JS_PATH_DIST=${JS_PATH}dist/
-JS_PATH_SRC=${JS_PATH}src/
+cd "$(dirname "$0")/.."
 
-find $JS_PATH_SRC -type f -name '*.js' | sort | xargs cat > ${JS_PATH_DIST}game.js
-
-echo yes | python3 manage.py collectstatic
+# TypeScript replaces the old JS concatenation step. The browser imports
+# dist/main.js, and that module points to the compiled dependency modules.
+npm run build
+python3 manage.py collectstatic --noinput

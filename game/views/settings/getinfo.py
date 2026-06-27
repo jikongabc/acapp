@@ -2,7 +2,13 @@ from django.http import JsonResponse
 from game.models.player.player import Player
 
 def getinfo_acapp(request):
-    player = Player.objects.all()[0]
+    user = request.user
+    if not user.is_authenticated:
+        return JsonResponse({
+            'result': "未登录"
+        })
+
+    player = Player.objects.get(user=user)
     return JsonResponse({
         'result': "success",
         'username': player.user.username,

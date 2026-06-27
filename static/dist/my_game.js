@@ -1,0 +1,575 @@
+// @ts-nocheck
+class MyGameMenu {
+    constructor(root) {
+        this.root = root;
+        this.$menu = $(`
+<div class="my-game-menu">
+    <div class="my-game-menu-field">
+        <div class="my-game-menu-field-item my-game-menu-field-item-single-mode">
+            单人模式
+        </div>
+        <div class="my-game-menu-field-item my-game-menu-field-item-multi-mode">
+            多人模式
+        </div>
+        <div class="my-game-menu-field-item my-game-menu-field-item-settings">
+            设置
+        </div>
+
+    </div>
+</div>
+`);
+        this.$menu.hide();
+        this.root.$my_game.append(this.$menu);
+        this.$single_mode = this.$menu.find('.my-game-menu-field-item-single-mode');
+        this.$multi_mode = this.$menu.find('.my-game-menu-field-item-multi-mode');
+        this.$settings = this.$menu.find('.my-game-menu-field-item-settings');
+        this.start();
+    }
+    start() {
+        this.add_listening_events();
+    }
+    add_listening_events() {
+        let outer = this;
+        this.$single_mode.click(function () {
+            outer.hide();
+            outer.root.play.show();
+        });
+        this.$multi_mode.click(function () {
+        });
+        this.$settings.click(function () {
+        });
+    }
+    show() {
+        this.$menu.show();
+    }
+    hide() {
+        this.$menu.hide();
+    }
+}
+let MY_GAME_OBJECTS = [];
+class MyGameObject {
+    constructor() {
+        MY_GAME_OBJECTS.push(this);
+        this.has_called_start = false; // 是否执行过start函数
+        this.timedelta = 0; // 当前帧距离上一帧的时间间隔
+    }
+    start() {
+    }
+    update() {
+    }
+    on_destroy() {
+    }
+    destroy() {
+        this.on_destroy();
+        for (let i = 0; i < MY_GAME_OBJECTS.length; i++) {
+            if (MY_GAME_OBJECTS[i] === this) {
+                MY_GAME_OBJECTS.splice(i, 1);
+                break;
+            }
+        }
+    }
+}
+let last_timestamp;
+let MY_GAME_ANIMATION = function (timestamp) {
+    for (let i = 0; i < MY_GAME_OBJECTS.length; i++) {
+        let obj = MY_GAME_OBJECTS[i];
+        if (!obj.has_called_start) {
+            obj.start();
+            obj.has_called_start = true;
+        }
+        else {
+            obj.timedelta = timestamp - last_timestamp;
+            obj.update();
+        }
+    }
+    last_timestamp = timestamp;
+    requestAnimationFrame(MY_GAME_ANIMATION);
+};
+requestAnimationFrame(MY_GAME_ANIMATION);
+class GameMap extends MyGameObject {
+    constructor(play) {
+        super();
+        this.play = play;
+        this.$canvas = $(`<canvas></canvas>`);
+        this.ctx = this.$canvas[0].getContext('2d');
+        this.ctx.canvas.width = this.play.width;
+        this.ctx.canvas.height = this.play.height;
+        this.play.$play.append(this.$canvas);
+    }
+    start() {
+        $(window).resize(() => {
+            if (this.game_map && this.players) {
+                this.resize();
+            }
+        });
+    }
+    update() {
+        this.render();
+    }
+    render() {
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+        this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+    }
+    resize() {
+        this.ctx.canvas.width = this.play.width;
+        this.ctx.canvas.height = this.play.height;
+    }
+}
+class Player extends MyGameObject {
+    constructor(play, x, y, radius, color, speed, is_me) {
+        super();
+        this.play = play;
+        this.ctx = this.play.game_map.ctx;
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.damage_x = 0;
+        this.damage_y = 0;
+        this.damage_speed = 0;
+        this.move_length = 0;
+        this.radius = radius;
+        this.color = color;
+        this.speed = speed;
+        this.is_me = is_me;
+        this.eps = 0.1;
+        this.friction = 0.9;
+        this.spent_time = 0;
+        this.cur_skill = null;
+        if (this.is_me) {
+            this.img = new Image();
+            this.img.src = this.play.root.settings.photo;
+        }
+    }
+    start() {
+        if (this.is_me) {
+            this.add_listening_events();
+        }
+        else {
+            let tx = Math.random() * this.play.width;
+            let ty = Math.random() * this.play.height;
+            this.move_to(tx, ty);
+        }
+    }
+    shoot_fireball(tx, ty) {
+        let x = this.x, y = this.y;
+        let radius = this.play.height * 0.01;
+        let angle = Math.atan2(ty - this.y, tx - this.x);
+        let vx = Math.cos(angle), vy = Math.sin(angle);
+        let color = "orange";
+        let speed = this.play.height * 0.5;
+        let move_length = this.play.height * 1;
+        new Fireball(this.play, this, x, y, radius, vx, vy, color, speed, move_length, this.play.height * 0.01);
+    }
+    is_attacked(angle, damage) {
+        for (let i = 0; i < 20 + Math.random() * 5; i++) {
+            let x = this.x, y = this.y;
+            let radius = this.radius * Math.random() * 0.1;
+            let angle = Math.PI * 2 * Math.random();
+            let vx = Math.cos(angle), vy = Math.sin(angle);
+            let color = this.color;
+            let speed = this.speed * 10;
+            let move_length = this.radius * Math.random() * 5;
+            new Particle(this.play, x, y, radius, vx, vy, color, speed, move_length);
+        }
+        this.radius -= damage;
+        if (this.radius < 10) {
+            this.destroy();
+            return false;
+        }
+        this.damage_x = Math.cos(angle);
+        this.damage_y = Math.sin(angle);
+        this.damage_speed = damage * 100;
+        this.speed *= 1.5;
+    }
+    add_listening_events() {
+        let outer = this;
+        this.play.game_map.$canvas.on("contextmenu", function () {
+            return false;
+        });
+        this.play.game_map.$canvas.mousedown(function (e) {
+            const rect = outer.ctx.canvas.getBoundingClientRect();
+            if (e.which === 3) {
+                outer.move_to(e.clientX - rect.left, e.clientY - rect.top);
+            }
+            else if (e.which === 1) {
+                if (outer.cur_skill === "fireball") {
+                    outer.shoot_fireball(e.clientX - rect.left, e.clientY - rect.top);
+                }
+                outer.cur_skill = null;
+            }
+        });
+        $(window).keydown(function (e) {
+            if (e.which === 81) {
+                outer.cur_skill = "fireball";
+                return false;
+            }
+        });
+    }
+    get_dist(x1, y1, x2, y2) {
+        let dx = x1 - x2;
+        let dy = y1 - y2;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    resize(x, y, radius, speed) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.speed = speed;
+    }
+    move_to(tx, ty) {
+        this.move_length = this.get_dist(this.x, this.y, tx, ty);
+        let angle = Math.atan2(ty - this.y, tx - this.x);
+        this.vx = Math.cos(angle);
+        this.vy = Math.sin(angle);
+    }
+    update() {
+        this.spent_time += this.timedelta / 1000;
+        if (!this.is_me && this.spent_time > 4 && Math.random() < 1 / 300.0) {
+            let players = this.play.players.filter(p => p !== this);
+            if (players.length === 0)
+                return;
+            let player = players[Math.floor(Math.random() * players.length)];
+            let tx = player.x + player.speed * this.vx * this.timedelta / 1000 * 0.3;
+            let ty = player.y + player.speed * this.vy * this.timedelta / 1000 * 0.2;
+            this.shoot_fireball(tx, ty);
+        }
+        if (this.damage_speed > 10) {
+            this.vx = this.vy = 0;
+            this.move_length = 0;
+            this.x += this.damage_x * this.damage_speed * this.timedelta / 1000;
+            this.y += this.damage_y * this.damage_speed * this.timedelta / 1000;
+            this.damage_speed *= this.friction;
+        }
+        else {
+            if (this.move_length < this.eps) {
+                this.move_length = 0;
+                this.vx = this.vy = 0;
+                if (!this.is_me) {
+                    let tx = Math.random() * this.play.width;
+                    let ty = Math.random() * this.play.height;
+                    this.move_to(tx, ty);
+                }
+            }
+            else {
+                let moved = Math.min(this.move_length, this.speed * this.timedelta / 1000);
+                this.x += this.vx * moved;
+                this.y += this.vy * moved;
+                this.move_length -= moved;
+            }
+        }
+        this.render();
+    }
+    render() {
+        if (this.is_me) {
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+            this.ctx.stroke();
+            this.ctx.clip();
+            this.ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+            this.ctx.restore();
+        }
+        else {
+            this.ctx.beginPath();
+            this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+            this.ctx.fillStyle = this.color;
+            this.ctx.fill();
+        }
+    }
+    on_destroy() {
+        if (this.is_me) {
+            this.play.game_map.$canvas.off("contextmenu");
+            this.play.game_map.$canvas.off("mousedown");
+            $(window).off("keydown");
+        }
+        for (let i = 0; i < this.play.players.length; i++) {
+            if (this.play.players[i] === this) {
+                this.play.players.splice(i, 1);
+            }
+        }
+    }
+}
+class Particle extends MyGameObject {
+    constructor(play, x, y, radius, vx, vy, color, speed, move_length) {
+        super();
+        this.play = play;
+        this.ctx = this.play.game_map.ctx;
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.speed = speed;
+        this.move_length = move_length;
+        this.friction = 0.9;
+        this.eps = 1;
+    }
+    start() {
+    }
+    update() {
+        if (this.speed < this.eps || this.move_length < this.eps) {
+            this.destroy();
+            return false;
+        }
+        let moved = Math.min(this.move_length, this.speed * this.timedelta / 1000);
+        this.x += this.vx * moved;
+        this.y += this.vy * moved;
+        this.speed *= this.friction;
+        this.move_length -= moved;
+        this.render();
+    }
+    render() {
+        this.ctx.beginPath();
+        this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        this.ctx.fillStyle = this.color;
+        this.ctx.fill();
+    }
+}
+class Fireball extends MyGameObject {
+    constructor(play, player, x, y, radius, vx, vy, color, speed, move_length, damage) {
+        super();
+        this.play = play;
+        this.ctx = this.play.game_map.ctx;
+        this.player = player;
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.speed = speed;
+        this.move_length = move_length;
+        this.damage = damage;
+        this.eps = 0.1;
+    }
+    start() {
+    }
+    get_dist(x1, y1, x2, y2) {
+        let dx = x1 - x2;
+        let dy = y1 - y2;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    is_collision(player) {
+        let distanse = this.get_dist(this.x, this.y, player.x, player.y);
+        if (distanse < this.radius + player.radius)
+            return true;
+        return false;
+    }
+    attack(player) {
+        let angle = Math.atan2(player.y - this.y, player.x - this.x);
+        player.is_attacked(angle, this.damage);
+        this.destroy();
+    }
+    update() {
+        for (let i = 0; i < this.play.players.length; i++) {
+            let player = this.play.players[i];
+            if (this.player !== player && this.is_collision(player)) {
+                this.attack(player);
+            }
+        }
+        if (this.move_length < this.eps) {
+            this.destroy();
+            return false;
+        }
+        let moved = Math.min(this.move_length, this.speed * this.timedelta / 1000);
+        this.x += this.vx * moved;
+        this.y += this.vy * moved;
+        this.move_length -= moved;
+        this.render();
+    }
+    render() {
+        this.ctx.beginPath();
+        this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        this.ctx.fillStyle = this.color;
+        this.ctx.fill();
+    }
+}
+class MyGamePlay {
+    constructor(root) {
+        this.root = root;
+        this.$play = $(`<div class="my-game-play"></div>`);
+        this.hide();
+        this.start();
+    }
+    get_random_color() {
+        let colors = ["blue", "red", "pink", "yellow", "green"];
+        return colors[Math.floor(Math.random() * 5)];
+    }
+    resize() {
+        let ratioX = this.$play.width() / this.width;
+        let ratioY = this.$play.height() / this.height;
+        this.width = this.$play.width();
+        this.height = this.$play.height();
+        this.game_map.resize();
+        for (let player of this.players) {
+            player.resize(player.x * ratioX, player.y * ratioY, this.height * 0.05, this.height * 0.15);
+        }
+    }
+    start() {
+        $(window).resize(() => {
+            this.resize();
+        });
+    }
+    show() {
+        this.$play.show();
+        this.root.$my_game.append(this.$play);
+        this.width = this.$play.width();
+        this.height = this.$play.height();
+        this.game_map = new GameMap(this);
+        this.players = [];
+        this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, "white", this.height * 0.15, true));
+        for (let i = 0; i < 5; i++) {
+            this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, this.get_random_color(), this.height * 0.15, false));
+        }
+    }
+    hide() {
+        this.$play.hide();
+    }
+}
+class Settings {
+    constructor(root) {
+        this.root = root;
+        this.platform = "WEB";
+        if (this.root.os)
+            this.platform = "ACAPP";
+        this.username = "";
+        this.photo = "";
+        this.$settings = $(`
+            <div class="my-game-settings">
+                <div class="my-game-settings-login">
+                    <div class="my-game-settings-title">
+                        登录
+                    </div>
+                    <div class="my-game-settings-username">
+                        <div class="my-game-settings-item">
+                            <input type="text" placeholder="用户名">
+                        </div>
+                    </div>
+                    <div class="my-game-settings-password">
+                        <div class="my-game-settings-item">
+                            <input type="password" placeholder="密码">
+                        </div>
+                    </div>
+                    <div class="my-game-settings-submit">
+                        <div class="my-game-settings-item">
+                            <button>登录</button>
+                        </div>
+                    </div>
+                    <div class="my-game-settings-error-messages">
+                    </div>
+                    <div class="my-game-settings-option">
+                        注册
+                    </div>
+					<br>					
+					<div class="my-game-settings-acwing">
+            			<img width="30" src="https://app165.acapp.acwing.com.cn/static/image/settings/acwing_logo.png">
+            			<br>
+            			<div>
+                			AcWing一键登录
+            			</div>
+              		</div>
+
+                </div>
+                <div class="my-game-settings-register">
+					<div class="my-game-settings-title">
+                        注册
+                    </div>
+                    <div class="my-game-settings-username">
+                        <div class="my-game-settings-item">
+                            <input type="text" placeholder="用户名">
+                        </div>
+                    </div>
+                    <div class="my-game-settings-password">
+                        <div class="my-game-settings-item">
+                            <input type="password" placeholder="密码">
+                        </div>
+                    </div>
+				    <div class="my-game-settings-password">
+                        <div class="my-game-settings-item">
+                            <input type="password" placeholder="确认密码">
+                        </div>
+                    </div>
+                    <div class="my-game-settings-submit">
+                        <div class="my-game-settings-item">
+                            <button>登录</button>
+                        </div>
+                    </div>
+                    <div class="my-game-settings-error-messages">
+                    </div>
+                    <div class="my-game-settings-option">
+                        登录
+                    </div>
+					<br>					
+					<div class="my-game-settings-acwing">
+            			<img width="30" src="https://app165.acapp.acwing.com.cn/static/image/settings/acwing_logo.png">
+            			<br>
+            			<div>
+                			AcWing一键登录
+            			</div>
+              		</div>
+                </div>
+            </div>
+        `);
+        this.$login = this.$settings.find(".my-game-settings-login");
+        this.$login.hide();
+        this.$register = this.$settings.find(".my-game-settings-register");
+        this.$register.hide();
+        this.root.$my_game.append(this.$settings);
+        this.start();
+    }
+    start() {
+        this.getinfo();
+    }
+    register() {
+        this.$login.hide();
+        this.$register.show();
+    }
+    login() {
+        this.$register.hide();
+        this.$login.show();
+    }
+    getinfo() {
+        let outer = this;
+        $.ajax({
+            url: "https://app8040.acapp.acwing.com.cn/settings/getinfo/",
+            type: "GET",
+            data: {
+                platform: outer.platform,
+            },
+            success: function (resp) {
+                if (resp.result === "success") {
+                    outer.username = resp.username;
+                    outer.photo = resp.photo;
+                    outer.hide();
+                    outer.root.menu.show();
+                }
+                else {
+                    outer.register();
+                }
+            }
+        });
+    }
+    hide() {
+        this.$settings.hide();
+    }
+    show() {
+        this.$settings.show();
+    }
+}
+class MyGame {
+    constructor(id, os) {
+        this.id = id;
+        this.$my_game = $('#' + id);
+        this.os = os;
+        this.settings = new Settings(this);
+        this.menu = new MyGameMenu(this);
+        this.play = new MyGamePlay(this);
+        this.start();
+    }
+    start() {
+    }
+}
+export { MyGame };
+//# sourceMappingURL=my_game.js.map

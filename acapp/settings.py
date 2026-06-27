@@ -29,6 +29,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["182.92.242.137", "app8040.acapp.acwing.com.cn"]
 
+ACWING_APP_ID = os.getenv("ACWING_APP_ID", "165")
+ACWING_APP_SECRET = os.getenv("ACWING_APP_SECRET", "")
+
 
 # Application definition
 
@@ -132,7 +135,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': "hahaha_secket_key",
+    'SIGNING_KEY': os.getenv("SIMPLE_JWT_SIGNING_KEY", SECRET_KEY),
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,

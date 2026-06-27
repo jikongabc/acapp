@@ -1,0 +1,12 @@
+{
+  "name": "acapp",
+  "private": true,
+  "scripts": {
+    "clean:dist": "rm -f game/static/dist/*.js game/static/dist/*.js.map game/static/dist/*.d.ts",
+    "build": "npm run clean:dist && tsc",
+    "build:static": "npm run build && python3 manage.py collectstatic --noinput"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from urllib.parse import quote
 from random import randint
 from django.core.cache import cache
+from django.conf import settings
 
 
 def get_state():
@@ -12,7 +13,7 @@ def get_state():
 
 
 def apply_code(request):
-    appid = "165"
+    appid = settings.ACWING_APP_ID
     redirect_uri = quote("https://app8040.acapp.acwing.com.cn/settings/acwing/web/receive_code/")
     scope = "userinfo"
     state = get_state()
